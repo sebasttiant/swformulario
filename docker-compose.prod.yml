@@ -10,7 +10,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-abad}
     volumes:
-      - abad-db-data:/var/lib/postgresql/data
+      # PostgreSQL 18 expects the volume at /var/lib/postgresql, not directly at
+      # /var/lib/postgresql/data. Mounting the parent keeps `docker compose up`
+      # working on fresh machines without pg_upgrade layout errors.
+      - abad-pg18-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abad} -d ${POSTGRES_DB:-abad}"]
       interval: 5s
@@ -21,6 +24,9 @@ services:
     build:
       context: .
       target: runner
+      # Use the host network during image build so Docker DNS hiccups do not
+      # break Corepack/pnpm or package registry access on Linux workstations.
+      network: host
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-abad}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-abad}?schema=public
@@ -39,4 +45,4 @@ services:
         condition: service_healthy
 
 volumes:
-  abad-db-data:
+  abad-pg18-data:
