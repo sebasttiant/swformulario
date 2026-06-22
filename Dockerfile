@@ -4,7 +4,10 @@
 FROM node:24-alpine AS base
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
-RUN corepack enable
+# Pin pnpm explicitly so Corepack never resolves "latest" against the registry
+# (which is non-deterministic and breaks builds without network/DNS). The pinned
+# version must match `packageManager` in package.json.
+RUN corepack enable && corepack prepare pnpm@11.7.0 --activate
 WORKDIR /app
 
 # ---- deps (full install, cached) ---------------------------------------

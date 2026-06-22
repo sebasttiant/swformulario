@@ -66,6 +66,23 @@ docker compose -f docker-compose.prod.yml exec app node prisma/seed.cjs
 
 Login en `/login` con `ADMIN_PASSWORD` (por defecto `abad-admin` en dev).
 
+La app siempre queda en **http://localhost:3000** (dev y prod).
+
+### Solución de problemas — Docker
+
+**pnpm es determinístico**: la versión está pineada con `packageManager` en
+`package.json` y `corepack prepare pnpm@11.7.0 --activate` en el Dockerfile.
+Corepack nunca resuelve `latest`, así que el build es reproducible.
+
+**Si el build de Docker falla por DNS** (`getaddrinfo EAI_AGAIN
+registry.npmjs.org`), usá la red del host para el build y luego levantá normal:
+
+```bash
+docker compose -f docker-compose.prod.yml build --network=host app
+docker compose -f docker-compose.prod.yml up
+# App: http://localhost:3000
+```
+
 ## Arranque local sin Docker
 
 ```bash
