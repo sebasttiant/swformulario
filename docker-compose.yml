@@ -1,0 +1,46 @@
+# Development stack — app (hot reload) + db. Exactly two services.
+# Usage: docker compose up --build
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-abad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-abad}
+      POSTGRES_DB: ${POSTGRES_DB:-abad}
+    ports:
+      - "5432:5432"
+    volumes:
+      - abad-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abad} -d ${POSTGRES_DB:-abad}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build:
+      context: .
+      target: dev
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abad}:${POSTGRES_PASSWORD:-abad}@db:5432/${POSTGRES_DB:-abad}?schema=public
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-abad-admin}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
+      ATHENEA_SEX_EXPORT_KEY: ${ATHENEA_SEX_EXPORT_KEY:-SEXO}
+      ATHENEA_DATE_FORMAT: ${ATHENEA_DATE_FORMAT:-yyyy-MM-dd}
+      EXPORT_API_KEY: ${EXPORT_API_KEY:-}
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  abad-db-data:

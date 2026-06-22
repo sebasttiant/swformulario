@@ -1,0 +1,105 @@
+// ABAD / Athenea patient intake — Prisma schema.
+// Catalog references are stored as plain CatalogValue ids (no hard FK) to keep
+// the MVP simple and the catalogs fully admin-editable.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Patient {
+  id String @id @default(cuid())
+
+  // Identification
+  documentTypeId String // CatalogValue.id of catalog "documentType"
+  documentNumber String // Stored as String even though Athenea types it as int.
+
+  birthDate     DateTime
+  firstName     String
+  secondName    String?
+  firstSurname  String
+  secondSurname String?
+
+  sexCatalogValueId String // CatalogValue.id of catalog "sex"
+  active            Boolean @default(true)
+
+  // Contact + location
+  address            String?
+  cityCatalogValueId String?
+  fixedPhone         String?
+  mobilePhone        String?
+  email              String?
+  noEmail            Boolean @default(false)
+
+  // Administrative dimensions (CatalogValue ids)
+  residentialZoneCatalogValueId        String?
+  userTypeCatalogValueId               String?
+  nationalityCatalogValueId            String?
+  insurerCatalogValueId                String?
+  patientOriginCatalogValueId          String?
+  treatmentCatalogValueId              String?
+  documentExpeditionCityCatalogValueId String?
+  entityCatalogValueId                 String?
+  planCatalogValueId                   String?
+
+  // Habeas Data authorization (required to confirm in the wizard).
+  habeasDataAccepted Boolean @default(false)
+
+  status String @default("DRAFT") // DRAFT | READY
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([documentNumber])
+  @@index([firstSurname, firstName])
+}
+
+model Catalog {
+  id          String         @id @default(cuid())
+  key         String         @unique
+  label       String
+  description String?
+  values      CatalogValue[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model CatalogValue {
+  id           String  @id @default(cuid())
+  catalogId    String
+  catalog      Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  code         String
+  label        String
+  atheneaValue String // Athenea ID/value. May be a placeholder — editable in admin.
+  active       Boolean @default(true)
+  sortOrder    Int     @default(0)
+
+  @@unique([catalogId, code])
+  @@index([catalogId])
+}
+
+model DimensionMapping {
+  id           String  @id @default(cuid())
+  dimensionKey String // D0..D9, ENTIDAD, PLAN
+  sourceField  String // patient field or catalog source feeding this dimension
+  catalogKey   String? // catalog key when the source is a catalog selection
+  exportKey    String // JSON key emitted in the Athenea payload
+  active       Boolean @default(true)
+  version      Int     @default(1)
+  updatedAt    DateTime @updatedAt
+
+  @@unique([dimensionKey])
+}
+
+model ExportBatch {
+  id               String   @id @default(cuid())
+  type             String // individual | batch | excel
+  filename         String
+  manifestFilename String
+  patientCount     Int
+  mappingVersion   Int
+  createdAt        DateTime @default(now())
+}

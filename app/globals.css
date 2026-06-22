@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+/*
+  ABAD Laboratorio brand tokens.
+  Derived from the official site (abadlaboratorio.com): clean white canvas,
+  charcoal text, and the signature red blood-drop accent.
+  NOTE (handoff): exact hex values should be sampled from the official brand
+  assets when available. These are close, production-safe approximations and
+  deliberately avoid Athenea's blue/turquoise palette.
+*/
+@theme {
+  --color-canvas: #f5f7f9;
+  --color-surface: #ffffff;
+  --color-ink: #1e2a38;
+  --color-ink-soft: #45556a;
+  --color-muted: #6b7a8d;
+  --color-border: #e3e8ee;
+
+  --color-brand: #c8102e;
+  --color-brand-strong: #a00c24;
+  --color-brand-soft: #fdecef;
+  --color-brand-foreground: #ffffff;
+
+  --color-accent: #0f766e;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-warning-soft: #fef3c7;
+  --color-danger: #b91c1c;
+
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-card: 0.875rem;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html {
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle focus ring consistent across custom UI primitives. */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
