@@ -1,25 +1,30 @@
-# Development stack — app (hot reload) + db. Exactly two services.
-# Usage: docker compose up --build
+# DEFAULT stack = PRODUCTION (standalone app + db). Exactly two services.
+#
+# Usage (what a client/demo runs):
+#   cp .env.example .env        # then edit secrets
+#   docker compose up -d --build
+#
+# This runs the standalone production server (NODE_ENV=production, `node
+# server.js`) — NO `next dev`, NO "N" indicator. The entrypoint applies DB
+# migrations and ensures the initial super admin before starting.
+#
+# For DEVELOPMENT with hot reload, use the explicit dev file instead:
+#   docker compose -f docker-compose.dev.yml up -d --build
 services:
   db:
     image: postgres:18-alpine
     restart: unless-stopped
     environment:
-      # Development defaults are intentionally fixed so `docker compose up -d
-      # --build` works even if the shell has leftover POSTGRES_* variables from
-      # a production run.
-      POSTGRES_USER: abad
-      POSTGRES_PASSWORD: abad
-      POSTGRES_DB: abad
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER:-abad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-abad}
     volumes:
       # PostgreSQL 18 expects the volume at /var/lib/postgresql, not directly at
-      # /var/lib/postgresql/data. Mounting the parent keeps `docker compose up`
-      # working on fresh machines without pg_upgrade layout errors.
+      # /var/lib/postgresql/data. Mounting the parent keeps `up` working on fresh
+      # machines without pg_upgrade layout errors.
       - abad-pg18-data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U abad -d abad"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abad} -d ${POSTGRES_DB:-abad}"]
       interval: 5s
       timeout: 5s
       retries: 12
@@ -27,29 +32,31 @@ services:
   app:
     build:
       context: .
-      target: dev
+      target: runner
       # Use the host network during image build so Docker DNS hiccups do not
       # break Corepack/pnpm or package registry access on Linux workstations.
       network: host
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://abad:abad@db:5432/abad?schema=public
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-abad-admin}
-      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-abad}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@db:5432/${POSTGRES_DB:-abad}?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env}
+      # Initial super admin OVERRIDE (optional). If unset, the seed uses its
+      # internal default (admin@ilasesorias.com). Used ONLY for the first
+      # creation when the owner does not exist; never re-synced on restart.
+      # Stored HASHED in the DB.
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
       ATHENEA_SEX_EXPORT_KEY: ${ATHENEA_SEX_EXPORT_KEY:-SEXO}
       ATHENEA_DATE_FORMAT: ${ATHENEA_DATE_FORMAT:-yyyy-MM-dd}
       EXPORT_API_KEY: ${EXPORT_API_KEY:-}
+      # Set to "true" to seed catalogs/mapping/demo data on a fresh DB.
+      RUN_SEED_ON_START: ${RUN_SEED_ON_START:-false}
       NEXT_TELEMETRY_DISABLED: "1"
-      WATCHPACK_POLLING: "true"
     ports:
       - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./:/app
-      - /app/node_modules
-      - /app/.next
 
 volumes:
   abad-pg18-data:

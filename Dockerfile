@@ -31,8 +31,12 @@ RUN pnpm build
 RUN pnpm exec esbuild prisma/seed.ts --bundle --platform=node --format=cjs \
     --external:@prisma/client --external:pg-native --external:pg-cloudflare \
     --outfile=prisma/seed.cjs
+# Same treatment for the idempotent super-admin seed (runs on every prod boot).
+RUN pnpm exec esbuild prisma/seed-admin.ts --bundle --platform=node --format=cjs \
+    --external:@prisma/client --external:pg-native --external:pg-cloudflare \
+    --outfile=prisma/seed-admin.cjs
 
-# ---- dev (full toolchain; used by docker-compose.yml) ------------------
+# ---- dev (full toolchain; used by docker-compose.dev.yml) --------------
 FROM base AS dev
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -40,9 +44,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN pnpm prisma generate
 EXPOSE 3000
-CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm prisma:seed && pnpm dev -p 3000 -H 0.0.0.0"]
+CMD ["sh", "-c", "pnpm prisma migrate deploy && pnpm prisma:seed:admin && pnpm prisma:seed && pnpm dev -p 3000 -H 0.0.0.0"]
 
-# ---- runner (slim standalone; used by docker-compose.prod.yml) ---------
+# ---- runner (slim standalone; DEFAULT prod, used by docker-compose.yml) -
 FROM base AS runner
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
