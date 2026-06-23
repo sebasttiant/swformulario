@@ -17,8 +17,9 @@
 /blob-report
 /.playwright
 
-# generated build artifacts (built inside the Docker image from prisma/seed.ts)
+# generated build artifacts (built inside the Docker image from prisma/*.ts)
 /prisma/seed.cjs
+/prisma/seed-admin.cjs
 
 # next.js
 /.next/

@@ -1,0 +1,62 @@
+# Development stack — app (hot reload) + db. Exactly two services.
+# Usage (DEV, explicit): docker compose -f docker-compose.dev.yml up -d --build
+#
+# This is the ONLY stack that runs `next dev` (and shows the Next.js "N" dev
+# indicator). Production is the DEFAULT docker-compose.yml. Do NOT use this for
+# client/demo.
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      # Development defaults are intentionally fixed so the dev stack works even
+      # if the shell has leftover POSTGRES_* variables from a production run.
+      POSTGRES_USER: abad
+      POSTGRES_PASSWORD: abad
+      POSTGRES_DB: abad
+    ports:
+      - "5432:5432"
+    volumes:
+      # PostgreSQL 18 expects the volume at /var/lib/postgresql, not directly at
+      # /var/lib/postgresql/data. Mounting the parent keeps `up` working on fresh
+      # machines without pg_upgrade layout errors.
+      - abad-pg18-data-dev:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U abad -d abad"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  app:
+    build:
+      context: .
+      target: dev
+      # Use the host network during image build so Docker DNS hiccups do not
+      # break Corepack/pnpm or package registry access on Linux workstations.
+      network: host
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://abad:abad@db:5432/abad?schema=public
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-abad-admin}
+      SESSION_SECRET: ${SESSION_SECRET:-dev-session-secret-change-me}
+      # Initial super admin override (optional). Blank → seed uses its internal
+      # default (admin@ilasesorias.com), same as production.
+      SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
+      SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
+      ATHENEA_SEX_EXPORT_KEY: ${ATHENEA_SEX_EXPORT_KEY:-SEXO}
+      ATHENEA_DATE_FORMAT: ${ATHENEA_DATE_FORMAT:-yyyy-MM-dd}
+      EXPORT_API_KEY: ${EXPORT_API_KEY:-}
+      NEXT_TELEMETRY_DISABLED: "1"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/.next
+
+volumes:
+  abad-pg18-data-dev:
