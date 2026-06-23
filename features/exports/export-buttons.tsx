@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState, type ElementType } from "react";
 import { Download, FileJson, FileSpreadsheet, Loader2 } from "lucide-react";
 import { exportPatients } from "./export-actions";
 import type { ExportType } from "./filename";
@@ -16,7 +16,7 @@ interface ExportButtonsProps {
   disabled?: boolean;
 }
 
-const LABELS: Record<ExportType, { label: string; icon: React.ElementType }> = {
+const LABELS: Record<ExportType, { label: string; icon: ElementType }> = {
   individual: { label: "JSON individual", icon: FileJson },
   batch: { label: "JSON lote", icon: FileJson },
   excel: { label: "Excel (.xlsx)", icon: FileSpreadsheet },
@@ -28,9 +28,9 @@ export function ExportButtons({
   withManifest = true,
   disabled,
 }: ExportButtonsProps) {
-  const [busy, setBusy] = React.useState<ExportType | null>(null);
-  const [message, setMessage] = React.useState<string | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+  const [busy, setBusy] = useState<ExportType | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function run(type: ExportType) {
     setBusy(type);

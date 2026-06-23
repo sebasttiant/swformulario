@@ -68,6 +68,10 @@ Login en `/login` con `ADMIN_PASSWORD` (por defecto `abad-admin` en dev).
 
 La app siempre queda en **http://localhost:3000** (dev y prod).
 
+> Nota para demo: el indicador flotante de Next solo aparece con `next dev`
+> (`docker compose up --build`). Para una demo visual sin ese indicador y con el
+> mismo runner standalone de producción, usá `docker compose -f docker-compose.prod.yml up --build`.
+
 ### Solución de problemas — Docker
 
 **pnpm es determinístico**: la versión está pineada con `packageManager` en

@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ export function PatientList({
   showExport = false,
   exportTypes = ["batch", "excel"],
 }: PatientListProps) {
-  const [selected, setSelected] = React.useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const allSelected = items.length > 0 && selected.size === items.length;
 
@@ -40,7 +40,7 @@ export function PatientList({
 
   if (items.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed border-border bg-canvas p-8 text-center text-sm text-muted">
+      <p className="rounded-2xl border border-dashed border-border bg-surface/80 p-8 text-center text-sm text-muted shadow-soft">
         No hay pacientes que coincidan.
       </p>
     );
@@ -48,10 +48,10 @@ export function PatientList({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+      <div className="overflow-x-auto rounded-2xl border border-white/70 bg-surface/95 shadow-soft ring-1 ring-border/60">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-border bg-canvas text-left text-xs uppercase tracking-wide text-muted">
+            <tr className="border-b border-border bg-surface-raised text-left text-xs uppercase tracking-wide text-muted">
               {showExport ? (
                 <th className="w-10 px-4 py-3">
                   <Checkbox
@@ -69,7 +69,7 @@ export function PatientList({
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="border-b border-border last:border-0">
+              <tr key={item.id} className="border-b border-border transition-colors last:border-0 hover:bg-brand-faint">
                 {showExport ? (
                   <td className="px-4 py-3">
                     <Checkbox
@@ -103,7 +103,7 @@ export function PatientList({
       </div>
 
       {showExport ? (
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="rounded-2xl border border-white/70 bg-surface/95 p-4 shadow-soft ring-1 ring-border/60">
           <p className="mb-1 text-sm font-medium text-ink">
             {selectedIds.length} paciente(s) seleccionado(s)
           </p>

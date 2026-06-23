@@ -1,4 +1,4 @@
-import { FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,15 +26,21 @@ export default async function ExportsPage({
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-ink">
-            Exportar a Athenea
-          </h1>
-          <p className="text-ink-soft">
-            Selecciona pacientes y genera el JSON (formato <code>InsPaciente</code>)
-            o el Excel. Cada exportación descarga también su manifiesto de
-            auditoría.
-          </p>
+        <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-ink p-6 text-white shadow-premium sm:p-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-brand/25" />
+          <div className="relative max-w-3xl">
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white/75">
+              <ShieldCheck className="size-3.5 text-brand" /> Área administrativa
+            </span>
+            <h1 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+              Exportar a Athenea
+            </h1>
+            <p className="mt-2 text-base leading-7 text-white/70">
+              Selecciona pacientes y genera el JSON (formato <code>InsPaciente</code>)
+              o el Excel. Cada exportación descarga también su manifiesto de
+              auditoría.
+            </p>
+          </div>
         </div>
 
         {placeholders ? (
@@ -44,7 +50,7 @@ export default async function ExportsPage({
           </Banner>
         ) : null}
 
-        <form className="flex gap-2" action="/exports">
+        <form className="flex gap-2 rounded-2xl border border-white/70 bg-surface/90 p-3 shadow-soft" action="/exports">
           <Input
             name="q"
             defaultValue={q ?? ""}

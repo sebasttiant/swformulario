@@ -1,10 +1,17 @@
 "use client";
 
-import * as React from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
+  Loader2,
+  ShieldCheck,
+} from "lucide-react";
 import {
   patientSchema,
   emptyPatientValues,
@@ -41,6 +48,10 @@ const STEPS = [
   "Resumen",
 ];
 
+export function getVisibleStepNumber(index: number): number {
+  return index + 1;
+}
+
 type FieldName = keyof PatientFormValues;
 
 function FieldError({ message }: { message?: string }) {
@@ -76,9 +87,9 @@ export function PatientWizard({
   patientId,
 }: PatientWizardProps) {
   const router = useRouter();
-  const [step, setStep] = React.useState(0);
-  const [submitting, setSubmitting] = React.useState(false);
-  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [step, setStep] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
@@ -91,13 +102,12 @@ export function PatientWizard({
     register,
     handleSubmit,
     trigger,
-    watch,
     setError,
     formState: { errors },
   } = form;
 
-  const noEmail = watch("noEmail");
-  const birthDate = watch("birthDate");
+  const noEmail = useWatch({ control, name: "noEmail" });
+  const birthDate = useWatch({ control, name: "birthDate" });
 
   function labelFor(list: CatalogOption[], id?: string): string {
     if (!id) return "—";
@@ -177,11 +187,39 @@ export function PatientWizard({
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5 lg:gap-6">
       <Stepper step={step} onSelect={goToStep} />
 
-      <Card>
-        <CardContent className="p-6">
+      <div className="grid gap-5 lg:grid-cols-[0.32fr_0.68fr]">
+        <aside className="relative overflow-hidden rounded-card border border-white/10 bg-ink p-5 text-white shadow-premium sm:p-6 lg:p-8">
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-brand/25" />
+          <div className="relative flex h-full flex-col justify-between gap-8">
+            <div className="space-y-4">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white/75">
+                <ShieldCheck className="size-3.5 text-brand" />
+                Registro seguro
+              </span>
+              <div>
+                <p className="text-3xl font-black tracking-tight">{STEPS[step]}</p>
+                <p className="mt-2 text-sm leading-6 text-white/65">
+                  Paso {step + 1} de {STEPS.length}. La información se valida antes de guardarse en la base de datos.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+              <p className="flex items-center gap-2 text-sm font-semibold">
+                <ClipboardCheck className="size-4 text-brand" />
+                Flujo de confianza
+              </p>
+              <p className="mt-2 text-sm leading-6 text-white/65">
+                Al finalizar verás una confirmación del registro. Las herramientas administrativas quedan fuera de este flujo.
+              </p>
+            </div>
+          </div>
+        </aside>
+
+      <Card className="overflow-hidden shadow-premium">
+        <CardContent className="p-4 sm:p-6 lg:p-8">
           <form onSubmit={onSubmit} className="flex flex-col gap-6">
             {step === 0 && (
               <Section
@@ -408,22 +446,23 @@ export function PatientWizard({
               </p>
             ) : null}
 
-            <div className="flex items-center justify-between border-t border-border pt-4">
+            <div className="flex flex-col-reverse gap-3 border-t border-border bg-surface-raised px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:-mx-8 lg:-mb-8 lg:px-8">
               <Button
                 type="button"
                 variant="ghost"
                 onClick={goPrev}
                 disabled={step === 0}
+                className="w-full sm:w-auto"
               >
                 <ChevronLeft className="size-4" /> Atrás
               </Button>
 
               {step < STEPS.length - 1 ? (
-                <Button type="button" onClick={goNext}>
+                <Button type="button" onClick={goNext} className="w-full sm:w-auto">
                   Siguiente <ChevronRight className="size-4" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={submitting}>
+                <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
                   {submitting ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
@@ -436,6 +475,7 @@ export function PatientWizard({
           </form>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
@@ -448,7 +488,7 @@ function Stepper({
   onSelect: (s: number) => void;
 }) {
   return (
-    <ol className="flex flex-wrap gap-2">
+    <ol className="flex gap-2 overflow-x-auto rounded-3xl border border-white/70 bg-surface/95 p-2 shadow-soft ring-1 ring-border/60 backdrop-blur lg:flex-wrap">
       {STEPS.map((label, index) => {
         const state =
           index === step ? "current" : index < step ? "done" : "todo";
@@ -458,15 +498,15 @@ function Stepper({
               type="button"
               onClick={() => onSelect(index)}
               className={cn(
-                "flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                "flex min-w-max items-center gap-2 rounded-full border px-3 py-2 text-xs font-semibold transition-all",
                 state === "current" &&
-                  "border-brand bg-brand text-brand-foreground",
-                state === "done" && "border-brand/30 bg-brand-soft text-brand-strong",
+                  "border-brand bg-brand text-brand-foreground shadow-lg shadow-brand/20",
+                state === "done" && "border-brand/30 bg-brand-soft text-brand-strong shadow-sm",
                 state === "todo" && "border-border bg-surface text-muted",
               )}
             >
               <span className="flex size-5 items-center justify-center rounded-full bg-black/10 text-[0.65rem]">
-                {state === "done" ? <Check className="size-3" /> : index}
+                {state === "done" ? <Check className="size-3" /> : getVisibleStepNumber(index)}
               </span>
               {label}
             </button>
@@ -484,17 +524,17 @@ function Section({
 }: {
   title: string;
   description?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-5">
       <div>
-        <h2 className="text-lg font-semibold text-ink">{title}</h2>
+        <h2 className="text-xl font-bold text-ink">{title}</h2>
         {description ? (
-          <p className="text-sm text-muted">{description}</p>
+          <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
         ) : null}
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
+      <div className="grid gap-4 lg:grid-cols-2">{children}</div>
     </div>
   );
 }
@@ -508,7 +548,7 @@ function Field({
   label: string;
   required?: boolean;
   error?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -674,7 +714,7 @@ function Summary({
       {sections.map((section) => (
         <div
           key={section.title}
-          className="rounded-lg border border-border bg-canvas p-4"
+          className="rounded-2xl border border-border bg-surface-raised p-4 shadow-soft"
         >
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-semibold text-ink">{section.title}</h3>

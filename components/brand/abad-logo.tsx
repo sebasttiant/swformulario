@@ -1,49 +1,47 @@
 import { cn } from "@/lib/utils/cn";
 
 /**
- * ABAD wordmark with the signature blood-drop isotype.
+ * Official ABAD logo (blood-drop isotype + wordmark), served from /public.
+ * - `dark` variant uses the all-white asset (for dark backgrounds, e.g. header).
+ * - `light` variant uses the brand asset (red drop + charcoal wordmark).
  *
- * NOTE (handoff): this is a faithful semantic recreation, not the exact official
- * asset. If the licensed SVG from abadlaboratorio.com becomes available, drop it
- * into /public and swap this component.
+ * Source: DOCUMENTOS/logoabad.svg (official). The brand variant is derived by
+ * recoloring the isotype/wordmark fills. SVGs are static — no external fonts or
+ * network, so the Docker/offline build is unaffected.
  */
 export function AbadLogo({
   className,
   showTagline = true,
+  variant = "light",
 }: {
   className?: string;
   showTagline?: boolean;
+  variant?: "light" | "dark";
 }) {
+  const src = variant === "dark" ? "/abad-logo-white.svg" : "/abad-logo-brand.svg";
+
   return (
-    <div className={cn("flex items-center gap-2.5", className)}>
-      <svg
-        viewBox="0 0 24 32"
-        className="h-8 w-6"
-        role="img"
-        aria-label="ABAD Laboratorio"
-      >
-        <path
-          d="M12 1C12 1 2 13 2 20a10 10 0 0 0 20 0C22 13 12 1 12 1Z"
-          fill="var(--color-brand)"
-        />
-        <path
-          d="M8 19a4 4 0 0 0 4 4"
-          fill="none"
-          stroke="#ffffff"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="leading-tight">
-        <div className="text-xl font-extrabold tracking-tight text-ink">
-          ABAD
-        </div>
-        {showTagline ? (
-          <div className="text-[0.625rem] font-semibold uppercase tracking-[0.25em] text-muted">
-            Laboratorio
-          </div>
-        ) : null}
-      </div>
+    <div className={cn("flex items-center gap-3", className)}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt="ABAD Laboratorio"
+        width={110}
+        height={32}
+        className="h-8 w-auto"
+      />
+      {showTagline ? (
+        <span
+          className={cn(
+            "hidden border-l pl-3 text-[0.625rem] font-semibold uppercase leading-tight tracking-[0.22em] sm:inline-block",
+            variant === "dark"
+              ? "border-white/20 text-white/60"
+              : "border-border text-muted",
+          )}
+        >
+          Laboratorio
+        </span>
+      ) : null}
     </div>
   );
 }

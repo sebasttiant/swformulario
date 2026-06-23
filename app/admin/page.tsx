@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, ListChecks, Settings2, UserPlus } from "lucide-react";
+import { Search, ListChecks, Settings2, UserPlus, UsersRound } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,18 +25,24 @@ export default async function AdminPage({
   return (
     <AppShell>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-surface/95 p-6 shadow-premium ring-1 ring-border/60 sm:p-8">
+          <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-brand/10 blur-3xl" />
+          <div className="relative flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink">
+            <span className="inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-strong">
+              <UsersRound className="size-3.5" /> Operación interna
+            </span>
+            <h1 className="mt-4 text-3xl font-black tracking-tight text-ink sm:text-4xl">
               Administración
             </h1>
-            <p className="text-ink-soft">Pacientes, catálogos y mapeo Athenea.</p>
+            <p className="mt-2 text-ink-soft">Pacientes, catálogos y mapeo Athenea.</p>
           </div>
           <Button asChild>
             <Link href="/patients/new">
               <UserPlus className="size-4" /> Nuevo paciente
             </Link>
           </Button>
+          </div>
         </div>
 
         {placeholders ? (
@@ -79,7 +85,7 @@ export default async function AdminPage({
           </Link>
         </div>
 
-        <form className="flex gap-2" action="/admin">
+        <form className="flex gap-2 rounded-2xl border border-white/70 bg-surface/90 p-3 shadow-soft" action="/admin">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
             <Input

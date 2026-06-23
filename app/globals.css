@@ -9,8 +9,9 @@
   deliberately avoid Athenea's blue/turquoise palette.
 */
 @theme {
-  --color-canvas: #f5f7f9;
+  --color-canvas: #f4f7fb;
   --color-surface: #ffffff;
+  --color-surface-raised: #fbfdff;
   --color-ink: #1e2a38;
   --color-ink-soft: #45556a;
   --color-muted: #6b7a8d;
@@ -19,17 +20,22 @@
   --color-brand: #c8102e;
   --color-brand-strong: #a00c24;
   --color-brand-soft: #fdecef;
+  --color-brand-faint: #fff7f8;
   --color-brand-foreground: #ffffff;
 
   --color-accent: #0f766e;
+  --color-accent-soft: #e6fffb;
   --color-success: #15803d;
+  --color-success-soft: #ecfdf3;
   --color-warning: #b45309;
   --color-warning-soft: #fef3c7;
   --color-danger: #b91c1c;
 
-  --font-sans: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
 
-  --radius-card: 0.875rem;
+  --radius-card: 1.25rem;
+  --shadow-premium: 0 22px 70px -35px rgba(30, 42, 56, 0.45);
+  --shadow-soft: 0 14px 35px -24px rgba(30, 42, 56, 0.35);
 }
 
 * {
@@ -42,14 +48,135 @@ html {
 
 body {
   min-height: 100%;
-  background: var(--color-canvas);
+  background:
+    radial-gradient(circle at top left, rgba(200, 16, 46, 0.16), transparent 31rem),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.1), transparent 26rem),
+    linear-gradient(180deg, #eef3f8 0%, var(--color-canvas) 22rem);
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background-image:
+    linear-gradient(rgba(30, 42, 56, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 42, 56, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 70%);
 }
 
 /* Subtle focus ring consistent across custom UI primitives. */
 :focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+/* ---- Motion: subtle, professional micro-interactions ---- */
+@keyframes abad-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes abad-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes abad-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Page/section entrance. Apply to a wrapper; children stagger via nth-child. */
+.animate-page-in > * {
+  animation: abad-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-page-in > *:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.animate-page-in > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.animate-page-in > *:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.animate-page-in > *:nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+
+.animate-fade-in {
+  animation: abad-fade-in 0.4s ease both;
+}
+.animate-fade-up {
+  animation: abad-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Skeleton shimmer for loading placeholders. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-border);
+}
+.skeleton::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.55),
+    transparent
+  );
+  animation: abad-shimmer 1.5s infinite;
+}
+
+/* Respect users who prefer less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-in > *,
+  .animate-fade-in,
+  .animate-fade-up,
+  .skeleton::after {
+    animation: none !important;
+  }
+}
+
+/* Refined custom scrollbar for a polished, app-like feel. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
+  background-color: color-mix(in srgb, var(--color-muted) 45%, transparent);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--color-muted) 65%, transparent);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand) 22%, transparent);
+  color: var(--color-ink);
 }
