@@ -24,7 +24,7 @@ import { getPatientCount } from "@/features/patients/patient-data";
 import { hasPlaceholderMappings } from "@/features/catalogs/catalog-data";
 
 export default async function HomePage() {
-  await requireAdmin();
+  const me = await requireAdmin();
   const [patientCount, placeholders] = await Promise.all([
     getPatientCount(),
     hasPlaceholderMappings(),
@@ -51,14 +51,14 @@ export default async function HomePage() {
     },
     {
       href: "/admin/mapping",
-      title: "Mapeo D0-D9",
-      description: "Configurar dimensiones de exportación.",
+      title: "Configuración de exportación",
+      description: "Ajustar equivalencias para Athenea.",
       icon: Settings2,
     },
   ];
 
   return (
-    <AppShell>
+    <AppShell role={me.role}>
       <div className="flex flex-col gap-6 lg:gap-8">
         <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-surface/95 shadow-premium ring-1 ring-border/60">
           <div className="absolute right-0 top-0 h-56 w-56 rounded-full bg-brand/10 blur-3xl" />
@@ -75,8 +75,9 @@ export default async function HomePage() {
               </div>
 
               <div className="max-w-3xl space-y-4">
-                <h1 className="text-4xl font-black tracking-tight text-ink sm:text-5xl lg:text-6xl">
-                  Registro de pacientes ABAD
+                <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                  <span className="text-ink">Registro de pacientes </span>
+                  <span className="text-gradient-brand">ABAD</span>
                 </h1>
                 <p className="text-base leading-7 text-ink-soft sm:text-lg">
                   Captura datos demográficos, valida el flujo por pasos y genera
@@ -92,7 +93,7 @@ export default async function HomePage() {
                 </div>
                 <div className="rounded-2xl border border-border/80 bg-surface-raised p-4 shadow-soft">
                   <p className="text-xs font-bold uppercase tracking-wide text-muted">Datos</p>
-                  <p className="mt-1 text-sm font-semibold text-ink">PostgreSQL persistente</p>
+                  <p className="mt-1 text-sm font-semibold text-ink">Almacenamiento seguro</p>
                 </div>
                 <div className="rounded-2xl border border-border/80 bg-surface-raised p-4 shadow-soft">
                   <p className="text-xs font-bold uppercase tracking-wide text-muted">Athenea</p>
@@ -122,7 +123,7 @@ export default async function HomePage() {
               <div className="relative flex h-full flex-col justify-between gap-8 rounded-2xl border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur">
                 <div>
                   <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-white/55">
-                    <BarChart3 className="size-4 text-brand" /> Estado demo
+                    <BarChart3 className="size-4 text-brand" /> Resumen
                   </p>
                   <p className="mt-3 text-5xl font-black">{patientCount}</p>
                   <p className="mt-1 text-sm text-white/65">
@@ -136,7 +137,7 @@ export default async function HomePage() {
                   </li>
                   <li className="flex gap-2">
                     <CheckCircle2 className="mt-0.5 size-4 text-brand" />
-                    Persistencia en PostgreSQL vía Docker Compose.
+                    Datos almacenados de forma segura y centralizada.
                   </li>
                   <li className="flex gap-2">
                     <LockKeyhole className="mt-0.5 size-4 text-brand" />
@@ -151,14 +152,14 @@ export default async function HomePage() {
         {placeholders ? (
           <Banner
             variant="warning"
-            title="Configuración con valores de ejemplo"
+            title="Configuración pendiente"
           >
-            El mapeo D0-D9 y los IDs de catálogo están sembrados como{" "}
-            <strong>placeholder</strong>. Confírmalos en{" "}
+            Las equivalencias de exportación y los catálogos tienen{" "}
+            <strong>valores iniciales por defecto</strong>. Confírmalos en{" "}
             <Link href="/admin/mapping" className="font-medium underline">
-              Mapeo
+              Configuración de exportación
             </Link>{" "}
-            antes de importar a Athenea.
+            antes de enviar a Athenea.
           </Banner>
         ) : null}
 
@@ -182,8 +183,9 @@ export default async function HomePage() {
               <CardTitle className="text-xl">Modo exportación</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-ink-soft">
-              El envío directo por API está deshabilitado (falta el documento de
-              autenticación JWT). Por ahora se exportan archivos JSON/Excel.
+              El envío directo por API está deshabilitado por ahora. Las
+              exportaciones se generan como archivos JSON y Excel listos para
+              Athenea.
             </CardContent>
           </Card>
         </section>
@@ -191,13 +193,16 @@ export default async function HomePage() {
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {actions.map((action) => (
             <Link key={action.href} href={action.href} className="group">
-              <Card className="h-full transition-all group-hover:-translate-y-0.5 group-hover:shadow-lg">
+              <Card className="card-hover h-full group-hover:ring-brand/30">
                 <CardContent className="flex min-h-44 flex-col justify-between gap-5 p-6">
-                  <span className="flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                  <span className="flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand ring-1 ring-brand/10 transition-transform duration-300 group-hover:scale-105">
                     <action.icon className="size-5" />
                   </span>
                   <div>
-                    <p className="text-lg font-bold text-ink">{action.title}</p>
+                    <p className="flex items-center justify-between text-lg font-bold text-ink">
+                      {action.title}
+                      <ArrowRight className="size-4 -translate-x-1 text-brand opacity-0 transition-all duration-300 group-hover:translate-x-0 group-hover:opacity-100" />
+                    </p>
                     <p className="mt-1 text-sm leading-6 text-muted">
                       {action.description}
                     </p>

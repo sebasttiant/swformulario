@@ -15,7 +15,7 @@ export default async function AdminPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await requireAdmin();
+  const me = await requireAdmin();
   const { q } = await searchParams;
   const [patients, placeholders] = await Promise.all([
     getPatients(q),
@@ -23,7 +23,7 @@ export default async function AdminPage({
   ]);
 
   return (
-    <AppShell>
+    <AppShell role={me.role}>
       <div className="flex flex-col gap-6">
         <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-surface/95 p-6 shadow-premium ring-1 ring-border/60 sm:p-8">
           <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-brand/10 blur-3xl" />
@@ -46,9 +46,9 @@ export default async function AdminPage({
         </div>
 
         {placeholders ? (
-          <Banner variant="warning" title="Mapeo / catálogos en placeholder">
-            Confirma el mapeo D0-D9 y los IDs de catálogo antes de exportar a
-            Athenea.
+          <Banner variant="warning" title="Configuración pendiente">
+            Confirma las equivalencias y los catálogos de exportación antes de
+            enviar a Athenea.
           </Banner>
         ) : null}
 
