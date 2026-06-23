@@ -36,6 +36,8 @@
   --radius-card: 1.25rem;
   --shadow-premium: 0 22px 70px -35px rgba(30, 42, 56, 0.45);
   --shadow-soft: 0 14px 35px -24px rgba(30, 42, 56, 0.35);
+  --shadow-glow: 0 0 0 1px rgba(200, 16, 46, 0.08), 0 18px 50px -24px rgba(200, 16, 46, 0.5);
+  --shadow-float: 0 32px 80px -40px rgba(30, 42, 56, 0.55);
 }
 
 * {
@@ -179,4 +181,139 @@ body::before {
 ::selection {
   background: color-mix(in srgb, var(--color-brand) 22%, transparent);
   color: var(--color-ink);
+}
+
+/* ---- Premium surface system ---- */
+
+/* Frosted translucent panel for layered, app-like depth. */
+.glass {
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+}
+
+/* Dark frosted panel for use over the ink/brand hero backgrounds. */
+.glass-dark {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Brand gradient applied to text — for premium display headings. */
+.text-gradient-brand {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-brand) 0%,
+    var(--color-brand-strong) 45%,
+    #6d0717 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Soft ink-to-brand gradient text for dark surfaces. */
+.text-gradient-ink {
+  background-image: linear-gradient(100deg, #ffffff 0%, #ffd9df 60%, #ff8fa1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gradient hairline border via mask — crisp at any radius. */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    140deg,
+    rgba(200, 16, 46, 0.55),
+    rgba(255, 255, 255, 0.65) 32%,
+    rgba(15, 118, 110, 0.35) 78%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Premium elevated card with hover lift. */
+.card-premium {
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(251, 253, 255, 0.78)),
+    var(--color-surface);
+  box-shadow: var(--shadow-soft);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-hover {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-float);
+}
+
+/* Soft radial brand glow blob for hero/decoration layers. */
+.glow-brand {
+  box-shadow: var(--shadow-glow);
+}
+
+/* Animated conic sheen used behind premium hero badges/avatars. */
+@keyframes abad-spin-slow {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.sheen-ring::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    color-mix(in srgb, var(--color-brand) 55%, transparent) 60deg,
+    transparent 140deg,
+    color-mix(in srgb, var(--color-accent) 45%, transparent) 220deg,
+    transparent 320deg
+  );
+  animation: abad-spin-slow 8s linear infinite;
+}
+
+/* Pulse for live/active status dots. */
+@keyframes abad-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.82);
+  }
+}
+.pulse-dot {
+  animation: abad-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheen-ring::before,
+  .pulse-dot {
+    animation: none !important;
+  }
+  .card-hover:hover {
+    transform: none;
+  }
 }
