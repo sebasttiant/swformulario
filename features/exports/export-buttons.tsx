@@ -80,6 +80,7 @@ export function ExportButtons({
               variant={type === "excel" ? "secondary" : "default"}
               onClick={() => run(type)}
               disabled={blocked}
+              className="disabled:bg-canvas disabled:text-muted disabled:opacity-100 disabled:shadow-none disabled:ring-1 disabled:ring-inset disabled:ring-border"
             >
               {busy === type ? (
                 <Loader2 className="size-4 animate-spin" />

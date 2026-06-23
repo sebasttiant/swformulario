@@ -1,9 +1,10 @@
-import { FileSpreadsheet, ShieldCheck } from "lucide-react";
+import { FileSpreadsheet, History, ShieldCheck } from "lucide-react";
 import { AppShell } from "@/components/layout/app-shell";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/components/ui/banner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PatientList } from "@/features/patients/patient-list";
 import { getPatients } from "@/features/patients/patient-data";
 import { hasPlaceholderMappings } from "@/features/catalogs/catalog-data";
@@ -73,7 +74,11 @@ export default async function ExportsPage({
           </CardHeader>
           <CardContent>
             {batches.length === 0 ? (
-              <p className="text-sm text-muted">Aún no hay exportaciones.</p>
+              <EmptyState
+                icon={History}
+                title="Aún no hay exportaciones"
+                description="Selecciona pacientes y genera un JSON o Excel; el historial de lotes aparecerá aquí."
+              />
             ) : (
               <ul className="flex flex-col divide-y divide-border text-sm">
                 {batches.map((b) => (

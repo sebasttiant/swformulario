@@ -191,7 +191,7 @@ export function PatientWizard({
       <Stepper step={step} onSelect={goToStep} />
 
       <div className="grid gap-5 lg:grid-cols-[0.32fr_0.68fr]">
-        <aside className="relative overflow-hidden rounded-card border border-white/10 bg-ink p-5 text-white shadow-premium sm:p-6 lg:p-8">
+        <aside className="relative order-last overflow-hidden rounded-card border border-white/10 bg-ink p-5 text-white shadow-premium sm:p-6 lg:order-none lg:p-8">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-brand/25" />
           <div className="relative flex h-full flex-col justify-between gap-8">
             <div className="space-y-4">
@@ -206,7 +206,7 @@ export function PatientWizard({
                 </p>
               </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
+            <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur sm:block">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <ClipboardCheck className="size-4 text-brand" />
                 Flujo de confianza
