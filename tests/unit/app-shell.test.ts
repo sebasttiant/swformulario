@@ -22,4 +22,22 @@ describe("AppShell patient variant", () => {
     expect(html).not.toContain('/admin');
     expect(html).not.toMatch(/administración/i);
   });
+
+  it("never exposes the user-management link in the patient flow", () => {
+    expect(
+      getAppShellNavItems("patient", "SUPER_ADMIN").map((i) => i.href),
+    ).not.toContain("/admin/users");
+  });
+});
+
+describe("AppShell role-based navigation", () => {
+  it("shows the Usuarios link only for SUPER_ADMIN", () => {
+    const superNav = getAppShellNavItems("admin", "SUPER_ADMIN").map((i) => i.href);
+    const adminNav = getAppShellNavItems("admin", "ADMIN").map((i) => i.href);
+    const anonNav = getAppShellNavItems("admin").map((i) => i.href);
+
+    expect(superNav).toContain("/admin/users");
+    expect(adminNav).not.toContain("/admin/users");
+    expect(anonNav).not.toContain("/admin/users");
+  });
 });

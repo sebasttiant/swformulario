@@ -14,12 +14,23 @@ export function LoginForm() {
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="password">Contraseña de administración</Label>
+        <Label htmlFor="email">Correo electrónico</Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          autoFocus
+          autoComplete="username"
+          placeholder="tu@correo.com"
+          aria-invalid={Boolean(state.error)}
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="password">Contraseña</Label>
         <Input
           id="password"
           name="password"
           type="password"
-          autoFocus
           autoComplete="current-password"
           placeholder="••••••••"
           aria-invalid={Boolean(state.error)}

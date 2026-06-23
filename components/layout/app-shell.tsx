@@ -4,6 +4,7 @@ import { AbadLogo } from "@/components/brand/abad-logo";
 import { logout } from "@/features/auth/auth-actions";
 import { Button } from "@/components/ui/button";
 import { Activity, LogOut, ShieldCheck } from "lucide-react";
+import type { AdminRole } from "@prisma/client";
 
 const NAV = [
   { href: "/", label: "Inicio" },
@@ -11,6 +12,10 @@ const NAV = [
   { href: "/admin", label: "Administración" },
   { href: "/exports", label: "Exportaciones" },
 ] as const;
+
+// SUPER_ADMIN-only entry. Appended for super admins on the admin shell. The nav
+// link is cosmetic — /admin/users is enforced by requireSuperAdmin() server-side.
+const SUPER_ADMIN_NAV = { href: "/admin/users", label: "Usuarios" } as const;
 
 const APP_SHELL_VARIANT = {
   ADMIN: "admin",
@@ -22,18 +27,26 @@ type AppShellVariant = (typeof APP_SHELL_VARIANT)[keyof typeof APP_SHELL_VARIANT
 interface AppShellProps {
   children?: ReactNode;
   variant?: AppShellVariant;
+  role?: AdminRole;
 }
 
-export function getAppShellNavItems(variant: AppShellVariant = APP_SHELL_VARIANT.ADMIN) {
+export function getAppShellNavItems(
+  variant: AppShellVariant = APP_SHELL_VARIANT.ADMIN,
+  role?: AdminRole,
+): ReadonlyArray<{ href: string; label: string }> {
   if (variant === APP_SHELL_VARIANT.PATIENT) {
     return NAV.filter((item) => item.href !== "/admin" && item.href !== "/exports");
   }
 
-  return NAV;
+  return role === "SUPER_ADMIN" ? [...NAV, SUPER_ADMIN_NAV] : NAV;
 }
 
-export function AppShell({ children, variant = APP_SHELL_VARIANT.ADMIN }: AppShellProps) {
-  const navItems = getAppShellNavItems(variant);
+export function AppShell({
+  children,
+  variant = APP_SHELL_VARIANT.ADMIN,
+  role,
+}: AppShellProps) {
+  const navItems = getAppShellNavItems(variant, role);
   const isPatientFlow = variant === APP_SHELL_VARIANT.PATIENT;
 
   return (

@@ -11,10 +11,12 @@ export async function login(
   _prev: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
+  const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  const ok = await createSession(password);
+  const ok = await createSession(email, password);
   if (!ok) {
-    return { error: "Contraseña incorrecta." };
+    // Generic message — never reveal whether the email exists.
+    return { error: "Credenciales inválidas." };
   }
   redirect("/");
 }
