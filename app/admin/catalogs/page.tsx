@@ -7,11 +7,11 @@ import { getCatalogsWithValues } from "@/features/catalogs/catalog-data";
 import { requireAdmin } from "@/lib/auth/session";
 
 export default async function CatalogsPage() {
-  await requireAdmin();
+  const me = await requireAdmin();
   const catalogs = await getCatalogsWithValues();
 
   return (
-    <AppShell>
+    <AppShell role={me.role}>
       <div className="flex flex-col gap-6">
         <div>
           <Link
@@ -30,9 +30,9 @@ export default async function CatalogsPage() {
         </div>
 
         <Banner variant="info" title="IDs de Athenea editables">
-          Los IDs sembrados son <strong>placeholder</strong>. El export usa
-          exactamente el valor de esta columna (<code>atheneaValue</code>), nunca
-          un ID hardcodeado.
+          Los IDs vienen con <strong>valores iniciales por defecto</strong>. La
+          exportación usa exactamente el valor de la columna ID de Athenea, que
+          podés ajustar en cualquier momento.
         </Banner>
 
         <CatalogEditor catalogs={catalogs} />

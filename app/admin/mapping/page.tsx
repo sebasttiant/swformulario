@@ -7,11 +7,11 @@ import { getDimensionMappings } from "@/features/catalogs/catalog-data";
 import { requireAdmin } from "@/lib/auth/session";
 
 export default async function MappingPage() {
-  await requireAdmin();
+  const me = await requireAdmin();
   const mappings = await getDimensionMappings();
 
   return (
-    <AppShell>
+    <AppShell role={me.role}>
       <div className="flex flex-col gap-6">
         <div>
           <Link
@@ -30,9 +30,10 @@ export default async function MappingPage() {
         </div>
 
         <Banner variant="warning" title="Mapeo no confirmado oficialmente">
-          El mapeo exacto D0-D9 <strong>no está documentado</strong> por Athenea.
-          El sembrado es una propuesta inicial (placeholder). Al guardar una
-          dimensión se marca como confirmada y deja de generar advertencia.
+          El mapeo exacto de dimensiones <strong>no está documentado</strong> por
+          Athenea. Los valores actuales son una propuesta inicial por defecto. Al
+          guardar una dimensión se marca como confirmada y deja de generar
+          advertencia.
         </Banner>
 
         <MappingEditor mappings={mappings} />
