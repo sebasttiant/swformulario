@@ -16,7 +16,7 @@ export default async function ExportsPage({
 }: {
   searchParams: Promise<{ q?: string }>;
 }) {
-  await requireAdmin();
+  const me = await requireAdmin();
   const { q } = await searchParams;
   const [patients, placeholders, batches] = await Promise.all([
     getPatients(q),
@@ -25,7 +25,7 @@ export default async function ExportsPage({
   ]);
 
   return (
-    <AppShell>
+    <AppShell role={me.role}>
       <div className="flex flex-col gap-6">
         <div className="relative overflow-hidden rounded-3xl border border-white/70 bg-ink p-6 text-white shadow-premium sm:p-8">
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-brand/25" />
@@ -37,17 +37,17 @@ export default async function ExportsPage({
               Exportar a Athenea
             </h1>
             <p className="mt-2 text-base leading-7 text-white/70">
-              Selecciona pacientes y genera el JSON (formato <code>InsPaciente</code>)
-              o el Excel. Cada exportación descarga también su manifiesto de
+              Selecciona pacientes y genera el archivo para Athenea en formato
+              JSON o Excel. Cada exportación descarga también su comprobante de
               auditoría.
             </p>
           </div>
         </div>
 
         {placeholders ? (
-          <Banner variant="warning" title="Configuración con placeholders">
-            Las exportaciones incluirán una advertencia en el manifiesto hasta que
-            confirmes el mapeo y los IDs de catálogo.
+          <Banner variant="warning" title="Configuración pendiente">
+            Las exportaciones incluirán una advertencia en el comprobante hasta que
+            confirmes las equivalencias y los catálogos de exportación.
           </Banner>
         ) : null}
 
