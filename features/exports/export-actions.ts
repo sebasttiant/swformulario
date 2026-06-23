@@ -42,6 +42,11 @@ export async function exportPatients(
   await requireAdmin();
   const config = getConfig();
 
+  // Require an explicit selection. Without this guard an empty list would fall
+  // through to "export all" — never export unselected patients by accident.
+  if (patientIds.length === 0) {
+    return { ok: false, error: "Seleccione al menos un paciente para exportar." };
+  }
   if (type === "individual" && patientIds.length !== 1) {
     return { ok: false, error: "Seleccione exactamente un paciente." };
   }

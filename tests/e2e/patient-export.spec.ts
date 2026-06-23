@@ -1,14 +1,19 @@
 import { test, expect } from "@playwright/test";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "abad-admin";
+// Defaults match the seed-admin internal default super admin (a known install
+// default, documented in the README), so the suite runs against a clean install.
+const ADMIN_EMAIL = process.env.SUPERADMIN_EMAIL ?? "admin@ilasesorias.com";
+const ADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD ?? "Infoseg.00*2026*";
 
 async function login(page: import("@playwright/test").Page) {
   await page.goto("/login");
-  await page.getByLabel("Contraseña de administración").fill(ADMIN_PASSWORD);
+  await page.getByLabel("Correo electrónico").fill(ADMIN_EMAIL);
+  await page.getByLabel("Contraseña").fill(ADMIN_PASSWORD);
   await page.getByRole("button", { name: "Ingresar" }).click();
-  await expect(
-    page.getByRole("heading", { name: /Registro de pacientes ABAD/i }),
-  ).toBeVisible();
+  // Assert a DASHBOARD-unique element. The "Registro de pacientes ABAD" heading
+  // also appears on the /login brand panel, so it cannot prove a successful
+  // login on its own — "Panel interno" only renders on the authenticated home.
+  await expect(page.getByText("Panel interno")).toBeVisible({ timeout: 15000 });
 }
 
 test("admin can reach the wizard and the export center", async ({ page }) => {

@@ -25,8 +25,12 @@ export async function buildPayloadsForPatients(
 ): Promise<BuiltPayloads> {
   const config = getConfig();
 
+  // `undefined` (no argument) means "all patients" — used only by the REST API's
+  // unfiltered batch call. An explicit ARRAY (even empty) is treated as an exact
+  // selection: an empty array matches nothing, so a partial/empty UI selection
+  // can never accidentally export every patient.
   const patients = await prisma.patient.findMany({
-    where: patientIds && patientIds.length ? { id: { in: patientIds } } : undefined,
+    where: patientIds ? { id: { in: patientIds } } : undefined,
     orderBy: { createdAt: "asc" },
   });
 

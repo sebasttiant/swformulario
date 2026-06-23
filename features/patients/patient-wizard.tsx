@@ -1,16 +1,25 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type ElementType, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
+  Building2,
   Check,
   ChevronLeft,
   ChevronRight,
   ClipboardCheck,
+  FileCheck2,
   Loader2,
+  MapPin,
+  PartyPopper,
+  Phone,
+  RotateCcw,
+  ScrollText,
   ShieldCheck,
+  Sparkles,
+  User,
 } from "lucide-react";
 import {
   patientSchema,
@@ -20,6 +29,7 @@ import {
 } from "./patient-schema";
 import {
   createPatient,
+  createPublicPatient,
   updatePatient,
   type PatientActionResult,
 } from "./patient-actions";
@@ -36,6 +46,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { cn } from "@/lib/utils/cn";
 
 const STEPS = [
@@ -75,21 +86,33 @@ function computeAge(birthDate: string): string {
   return `${years} año${years === 1 ? "" : "s"}`;
 }
 
+export type PatientWizardMode = "admin" | "public";
+
 export interface PatientWizardProps {
   options: CatalogOptions;
   initialValues?: PatientFormValues;
   patientId?: string;
+  /**
+   * "admin" (default): authenticated operators; on save the wizard navigates to
+   * the protected patient detail. "public": unauthenticated external patients;
+   * on save the wizard shows an in-place confirmation and exposes NO links into
+   * protected areas.
+   */
+  mode?: PatientWizardMode;
 }
 
 export function PatientWizard({
   options,
   initialValues,
   patientId,
+  mode = "admin",
 }: PatientWizardProps) {
   const router = useRouter();
+  const isPublic = mode === "public";
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
 
   const form = useForm<PatientFormValues>({
     resolver: zodResolver(patientSchema),
@@ -103,11 +126,42 @@ export function PatientWizard({
     handleSubmit,
     trigger,
     setError,
+    clearErrors,
+    setValue,
+    getValues,
     formState: { errors },
   } = form;
 
   const noEmail = useWatch({ control, name: "noEmail" });
   const birthDate = useWatch({ control, name: "birthDate" });
+  const cityValue = useWatch({ control, name: "cityCatalogValueId" });
+  const nationalityValue = useWatch({ control, name: "nationalityCatalogValueId" });
+
+  // The "Otro" options reveal a free-text field. They are identified by their
+  // catalog code (city = "OTRO", nationality = "OT"), not a hardcoded id.
+  const cityOtherId = options.city.find((o) => o.code === "OTRO")?.id;
+  const nationalityOtherId = options.nationality.find((o) => o.code === "OT")?.id;
+  const showCityOther = !!cityOtherId && cityValue === cityOtherId;
+  const showNationalityOther =
+    !!nationalityOtherId && nationalityValue === nationalityOtherId;
+
+  /**
+   * Conditional-required validation for the "Otro" free-text fields. The zod
+   * schema can't express this (it only sees opaque catalog ids), so the wizard
+   * and the server action enforce it explicitly.
+   */
+  function validateOtherFields(): boolean {
+    let ok = true;
+    if (showCityOther && !(getValues("cityOther") ?? "").trim()) {
+      setError("cityOther", { message: "Especifique la ciudad." });
+      ok = false;
+    }
+    if (showNationalityOther && !(getValues("nationalityOther") ?? "").trim()) {
+      setError("nationalityOther", { message: "Especifique la nacionalidad." });
+      ok = false;
+    }
+    return ok;
+  }
 
   function labelFor(list: CatalogOption[], id?: string): string {
     if (!id) return "—";
@@ -140,7 +194,9 @@ export function PatientWizard({
     }
     for (let i = step; i < clamped; i++) {
       const fields = STEP_FIELDS[i] as FieldName[] | undefined;
-      const ok = fields ? await trigger(fields) : true;
+      let ok = fields ? await trigger(fields) : true;
+      // Step 3 (Location) owns the conditional "Otro" free-text fields.
+      if (i === 3 && !validateOtherFields()) ok = false;
       if (!ok) {
         setStep(i);
         return;
@@ -164,15 +220,29 @@ export function PatientWizard({
 
   const onSubmit = handleSubmit(
     async (values) => {
+      // Guard the conditional "Otro" fields before hitting the server.
+      if (!validateOtherFields()) {
+        setStep(3);
+        return;
+      }
       setSubmitting(true);
       setServerError(null);
       try {
         const result = patientId
           ? await updatePatient(patientId, values)
-          : await createPatient(values);
+          : isPublic
+            ? await createPublicPatient(values)
+            : await createPatient(values);
         if (result.ok) {
-          router.push(`/patients/${result.id}`);
-          router.refresh();
+          if (isPublic) {
+            // Public patients have no access to the protected detail page; show
+            // an in-place confirmation instead of navigating anywhere private.
+            setSubmitted(true);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else {
+            router.push(`/patients/${result.id}`);
+            router.refresh();
+          }
         } else {
           applyServerErrors(result);
         }
@@ -186,6 +256,17 @@ export function PatientWizard({
     },
   );
 
+  function registerAnother() {
+    form.reset(emptyPatientValues);
+    setStep(0);
+    setSubmitted(false);
+    setServerError(null);
+  }
+
+  if (submitted && isPublic) {
+    return <PublicConfirmation onRegisterAnother={registerAnother} />;
+  }
+
   return (
     <div className="flex flex-col gap-5 lg:gap-6">
       <Stepper step={step} onSelect={goToStep} />
@@ -197,22 +278,27 @@ export function PatientWizard({
             <div className="space-y-4">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white/75">
                 <ShieldCheck className="size-3.5 text-brand" />
-                Registro seguro
+                {isPublic ? "Tus datos, protegidos" : "Registro seguro"}
               </span>
               <div>
                 <p className="text-3xl font-black tracking-tight">{STEPS[step]}</p>
                 <p className="mt-2 text-sm leading-6 text-white/65">
-                  Paso {step + 1} de {STEPS.length}. La información se valida antes de guardarse en la base de datos.
+                  Paso {step + 1} de {STEPS.length}.{" "}
+                  {isPublic
+                    ? "Validamos cada sección para que tu información quede correcta y completa."
+                    : "La información se valida antes de registrarse."}
                 </p>
               </div>
             </div>
             <div className="hidden rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur sm:block">
               <p className="flex items-center gap-2 text-sm font-semibold">
                 <ClipboardCheck className="size-4 text-brand" />
-                Flujo de confianza
+                {isPublic ? "¿Qué pasa al terminar?" : "Flujo de confianza"}
               </p>
               <p className="mt-2 text-sm leading-6 text-white/65">
-                Al finalizar verás una confirmación del registro. Las herramientas administrativas quedan fuera de este flujo.
+                {isPublic
+                  ? "Verás una confirmación de que recibimos tu registro. No necesitas imprimir ni enviar nada más."
+                  : "Al finalizar verás una confirmación del registro. Las herramientas administrativas quedan fuera de este flujo."}
               </p>
             </div>
           </div>
@@ -225,6 +311,7 @@ export function PatientWizard({
               <Section
                 title="Verificación de documento"
                 description="Validación de formato local. No consulta Athenea en esta etapa."
+                icon={FileCheck2}
               >
                 <ControlledSelect
                   control={control}
@@ -245,7 +332,7 @@ export function PatientWizard({
             )}
 
             {step === 1 && (
-              <Section title="Identificación del paciente">
+              <Section title="Identificación del paciente" icon={User}>
                 <Field label="Primer nombre" required error={errors.firstName?.message}>
                   <Input {...register("firstName")} />
                 </Field>
@@ -279,7 +366,7 @@ export function PatientWizard({
             )}
 
             {step === 2 && (
-              <Section title="Contacto">
+              <Section title="Contacto" icon={Phone}>
                 <Field label="Teléfono fijo" error={errors.fixedPhone?.message}>
                   <Input {...register("fixedPhone")} inputMode="tel" />
                 </Field>
@@ -307,18 +394,36 @@ export function PatientWizard({
             )}
 
             {step === 3 && (
-              <Section title="Ubicación">
+              <Section title="Ubicación" icon={MapPin}>
                 <Field label="Dirección" error={errors.address?.message}>
                   <Input {...register("address")} placeholder="Cra 15 # 93-47" />
                 </Field>
-                <ControlledSelect
+                <ControlledSearchableSelect
                   control={control}
                   name="cityCatalogValueId"
                   label="Ciudad"
                   required
                   options={options.city}
                   error={errors.cityCatalogValueId?.message}
+                  onAfterChange={(v) => {
+                    if (v !== cityOtherId) {
+                      setValue("cityOther", "");
+                      clearErrors("cityOther");
+                    }
+                  }}
                 />
+                {showCityOther && (
+                  <Field
+                    label="Especifique la ciudad"
+                    required
+                    error={errors.cityOther?.message}
+                  >
+                    <Input
+                      {...register("cityOther")}
+                      placeholder="Nombre del municipio"
+                    />
+                  </Field>
+                )}
                 <ControlledSelect
                   control={control}
                   name="residentialZoneCatalogValueId"
@@ -327,19 +432,37 @@ export function PatientWizard({
                   options={options.residentialZone}
                   error={errors.residentialZoneCatalogValueId?.message}
                 />
-                <ControlledSelect
+                <ControlledSearchableSelect
                   control={control}
                   name="nationalityCatalogValueId"
                   label="Nacionalidad"
                   required
                   options={options.nationality}
                   error={errors.nationalityCatalogValueId?.message}
+                  onAfterChange={(v) => {
+                    if (v !== nationalityOtherId) {
+                      setValue("nationalityOther", "");
+                      clearErrors("nationalityOther");
+                    }
+                  }}
                 />
+                {showNationalityOther && (
+                  <Field
+                    label="Especifique la nacionalidad"
+                    required
+                    error={errors.nationalityOther?.message}
+                  >
+                    <Input
+                      {...register("nationalityOther")}
+                      placeholder="Nacionalidad"
+                    />
+                  </Field>
+                )}
               </Section>
             )}
 
             {step === 4 && (
-              <Section title="Datos administrativos">
+              <Section title="Datos administrativos" icon={Building2}>
                 <ControlledSelect
                   control={control}
                   name="userTypeCatalogValueId"
@@ -371,7 +494,7 @@ export function PatientWizard({
                   options={options.treatment}
                   error={errors.treatmentCatalogValueId?.message}
                 />
-                <ControlledSelect
+                <ControlledSearchableSelect
                   control={control}
                   name="documentExpeditionCityCatalogValueId"
                   label="Ciudad de expedición del documento"
@@ -400,6 +523,7 @@ export function PatientWizard({
               <Section
                 title="Autorización de datos (Habeas Data)"
                 description="Requerido para continuar."
+                icon={ScrollText}
               >
                 <div className="rounded-lg border border-border bg-canvas p-4 text-sm text-ink-soft">
                   Autorizo de manera libre, previa y expresa a ABAD Laboratorio
@@ -429,6 +553,7 @@ export function PatientWizard({
               <Section
                 title="Resumen"
                 description="Revisa y confirma. Puedes volver a cualquier sección para editar."
+                icon={ClipboardCheck}
               >
                 <Summary
                   values={form.getValues()}
@@ -480,6 +605,75 @@ export function PatientWizard({
   );
 }
 
+/** Polished success screen for the public intake flow. Exposes NO navigation
+ * into protected areas and NO export controls — only a thank-you message and an
+ * option to register another patient. */
+function PublicConfirmation({
+  onRegisterAnother,
+}: {
+  onRegisterAnother: () => void;
+}) {
+  const steps = [
+    "Recibimos tu información de forma segura.",
+    "Nuestro equipo la validará para tu atención.",
+    "No necesitas hacer nada más por ahora.",
+  ];
+
+  return (
+    <div className="animate-fade-up mx-auto flex max-w-xl flex-col items-center text-center">
+      <div className="relative overflow-hidden rounded-card border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(251,253,255,0.85))] p-8 shadow-premium ring-1 ring-border/50 sm:p-10">
+        <div className="absolute -right-10 -top-10 size-40 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute -bottom-10 -left-10 size-40 rounded-full bg-brand/10 blur-3xl" />
+
+        <div className="relative mx-auto grid size-20 place-items-center">
+          <span className="sheen-ring absolute inset-0 rounded-full opacity-70 blur-[2px]" />
+          <span className="relative grid size-16 place-items-center rounded-full bg-[linear-gradient(180deg,#1aa172,#0f766e)] text-white shadow-lg shadow-accent/30">
+            <Check className="size-8" strokeWidth={3} />
+          </span>
+        </div>
+
+        <span className="relative mt-6 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1 text-xs font-bold uppercase tracking-wide text-success">
+          <PartyPopper className="size-3.5" />
+          Registro enviado
+        </span>
+
+        <h2 className="relative mt-4 text-3xl font-black tracking-tight text-ink">
+          ¡Gracias! Tu registro fue enviado
+        </h2>
+        <p className="relative mx-auto mt-3 max-w-md text-base leading-7 text-ink-soft">
+          Tus datos quedaron guardados correctamente. No necesitas imprimir ni
+          enviar nada más.
+        </p>
+
+        <ul className="relative mt-7 space-y-3 text-left">
+          {steps.map((label) => (
+            <li
+              key={label}
+              className="flex items-start gap-3 rounded-2xl border border-border/70 bg-surface/80 px-4 py-3 text-sm text-ink-soft shadow-sm"
+            >
+              <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-success-soft text-success">
+                <Check className="size-3.5" strokeWidth={3} />
+              </span>
+              {label}
+            </li>
+          ))}
+        </ul>
+
+        <div className="relative mt-8">
+          <Button type="button" variant="outline" onClick={onRegisterAnother}>
+            <RotateCcw className="size-4" /> Registrar otro paciente
+          </Button>
+        </div>
+      </div>
+
+      <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-muted">
+        <Sparkles className="size-3.5 text-brand" />
+        ABAD Laboratorio · Atención centrada en el paciente
+      </p>
+    </div>
+  );
+}
+
 function Stepper({
   step,
   onSelect,
@@ -487,8 +681,21 @@ function Stepper({
   step: number;
   onSelect: (s: number) => void;
 }) {
+  const progress = Math.round((step / (STEPS.length - 1)) * 100);
   return (
-    <ol className="flex gap-2 overflow-x-auto rounded-3xl border border-white/70 bg-surface/95 p-2 shadow-soft ring-1 ring-border/60 backdrop-blur lg:flex-wrap">
+    <div className="flex flex-col gap-3 rounded-3xl border border-white/80 bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(251,253,255,0.82))] p-3 shadow-soft ring-1 ring-border/50 backdrop-blur">
+      <div className="flex items-center gap-3 px-1">
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border/70">
+          <div
+            className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-brand),var(--color-brand-strong))] transition-all duration-500 ease-out"
+            style={{ width: `${Math.max(progress, 6)}%` }}
+          />
+        </div>
+        <span className="shrink-0 text-xs font-bold tabular-nums text-brand-strong">
+          {step + 1}/{STEPS.length}
+        </span>
+      </div>
+      <ol className="flex gap-2 overflow-x-auto lg:flex-wrap">
       {STEPS.map((label, index) => {
         const state =
           index === step ? "current" : index < step ? "done" : "todo";
@@ -513,26 +720,36 @@ function Stepper({
           </li>
         );
       })}
-    </ol>
+      </ol>
+    </div>
   );
 }
 
 function Section({
   title,
   description,
+  icon: Icon,
   children,
 }: {
   title: string;
   description?: string;
+  icon?: ElementType;
   children: ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-xl font-bold text-ink">{title}</h2>
-        {description ? (
-          <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
+      <div className="flex items-start gap-3">
+        {Icon ? (
+          <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand ring-1 ring-brand/10">
+            <Icon className="size-5" />
+          </span>
         ) : null}
+        <div>
+          <h2 className="text-xl font-bold text-ink">{title}</h2>
+          {description ? (
+            <p className="mt-1 text-sm leading-6 text-muted">{description}</p>
+          ) : null}
+        </div>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">{children}</div>
     </div>
@@ -595,6 +812,44 @@ function ControlledSelect({
               ))}
             </SelectContent>
           </Select>
+        )}
+      />
+    </Field>
+  );
+}
+
+function ControlledSearchableSelect({
+  control,
+  name,
+  label,
+  options,
+  required,
+  error,
+  onAfterChange,
+}: {
+  control: ReturnType<typeof useForm<PatientFormValues>>["control"];
+  name: FieldName;
+  label: string;
+  options: CatalogOption[];
+  required?: boolean;
+  error?: string;
+  onAfterChange?: (value: string) => void;
+}) {
+  return (
+    <Field label={label} required={required} error={error}>
+      <Controller
+        control={control}
+        name={name}
+        render={({ field }) => (
+          <SearchableSelect
+            aria-label={label}
+            value={(field.value as string) || undefined}
+            onValueChange={(v) => {
+              field.onChange(v);
+              onAfterChange?.(v);
+            }}
+            options={options.map((o) => ({ value: o.id, label: o.label }))}
+          />
         )}
       />
     </Field>
@@ -684,9 +939,22 @@ function Summary({
       title: "Ubicación",
       rows: [
         ["Dirección", values.address || "—"],
-        ["Ciudad", labelFor(options.city, values.cityCatalogValueId)],
+        [
+          "Ciudad",
+          options.city.find((o) => o.id === values.cityCatalogValueId)?.code ===
+          "OTRO"
+            ? values.cityOther || "Otro"
+            : labelFor(options.city, values.cityCatalogValueId),
+        ],
         ["Zona residencial", labelFor(options.residentialZone, values.residentialZoneCatalogValueId)],
-        ["Nacionalidad", labelFor(options.nationality, values.nationalityCatalogValueId)],
+        [
+          "Nacionalidad",
+          options.nationality.find(
+            (o) => o.id === values.nationalityCatalogValueId,
+          )?.code === "OT"
+            ? values.nationalityOther || "Otra"
+            : labelFor(options.nationality, values.nationalityCatalogValueId),
+        ],
       ],
     },
     {

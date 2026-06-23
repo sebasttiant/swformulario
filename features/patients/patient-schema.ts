@@ -44,8 +44,14 @@ export const patientSchema = z
     // Step 3 — Location
     address: optionalText(),
     cityCatalogValueId: requiredText("Seleccione la ciudad."),
+    // Free text used only when the selected city is "Otro". Conditional-required
+    // validation lives in the wizard and the server action (they know which
+    // catalog value is the "Otro" option; the schema only sees opaque ids).
+    cityOther: optionalText(),
     residentialZoneCatalogValueId: requiredText("Seleccione la zona residencial."),
     nationalityCatalogValueId: requiredText("Seleccione la nacionalidad."),
+    // Free text used only when the selected nationality is "Otra".
+    nationalityOther: optionalText(),
 
     // Step 4 — Administrative
     userTypeCatalogValueId: requiredText("Seleccione el tipo de usuario."),
@@ -126,8 +132,10 @@ export const emptyPatientValues: PatientFormValues = {
   noEmail: false,
   address: "",
   cityCatalogValueId: "",
+  cityOther: "",
   residentialZoneCatalogValueId: "",
   nationalityCatalogValueId: "",
+  nationalityOther: "",
   userTypeCatalogValueId: "",
   insurerCatalogValueId: "",
   patientOriginCatalogValueId: "",
@@ -157,8 +165,10 @@ export const STEP_FIELDS: Array<Array<keyof PatientFormValues>> = [
   [
     "address",
     "cityCatalogValueId",
+    "cityOther",
     "residentialZoneCatalogValueId",
     "nationalityCatalogValueId",
+    "nationalityOther",
   ],
   // Step 4 — Administrative
   [
