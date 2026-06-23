@@ -43,12 +43,20 @@ export async function validateCatalogRefs(
   const rows = ids.length
     ? await prisma.catalogValue.findMany({
         where: { id: { in: ids } },
-        select: { id: true, active: true, catalog: { select: { key: true } } },
+        select: {
+          id: true,
+          code: true,
+          active: true,
+          catalog: { select: { key: true } },
+        },
       })
     : [];
 
   const byId = new Map(
-    rows.map((r) => [r.id, { active: r.active, key: r.catalog.key }]),
+    rows.map((r) => [
+      r.id,
+      { active: r.active, key: r.catalog.key, code: r.code },
+    ]),
   );
 
   const fieldErrors: Record<string, string[]> = {};
@@ -70,6 +78,29 @@ export async function validateCatalogRefs(
 
   for (const [field, key] of REQUIRED_REFS) check(field, key, true);
   for (const [field, key] of OPTIONAL_REFS) check(field, key, false);
+
+  // "Otro" options require the matching free-text field. Identified by catalog
+  // code (city = "OTRO", nationality = "OT") so it stays valid even if catalogs
+  // are re-seeded with different ids.
+  const requireOther = (
+    refField: PatientField,
+    otherCode: string,
+    otherField: keyof PatientParsed,
+    message: string,
+  ) => {
+    const id = parsed[refField] as string | undefined;
+    if (id && byId.get(id)?.code === otherCode) {
+      const text = (parsed[otherField] as string | undefined)?.trim();
+      if (!text) fieldErrors[otherField as string] = [message];
+    }
+  };
+  requireOther("cityCatalogValueId", "OTRO", "cityOther", "Especifique la ciudad.");
+  requireOther(
+    "nationalityCatalogValueId",
+    "OT",
+    "nationalityOther",
+    "Especifique la nacionalidad.",
+  );
 
   return Object.keys(fieldErrors).length ? { ok: false, fieldErrors } : { ok: true };
 }

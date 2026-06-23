@@ -16,11 +16,23 @@ interface ExportButtonsProps {
   disabled?: boolean;
 }
 
-const LABELS: Record<ExportType, { label: string; icon: ElementType }> = {
-  individual: { label: "JSON individual", icon: FileJson },
-  batch: { label: "JSON lote", icon: FileJson },
-  excel: { label: "Excel (.xlsx)", icon: FileSpreadsheet },
+const ICONS: Record<ExportType, ElementType> = {
+  individual: FileJson,
+  batch: FileJson,
+  excel: FileSpreadsheet,
 };
+
+/** Count-aware button label so it's always clear what will be exported. */
+function exportLabel(type: ExportType, count: number): string {
+  const who =
+    count === 0
+      ? "pacientes seleccionados"
+      : count === 1
+        ? "paciente seleccionado"
+        : `${count} pacientes seleccionados`;
+  const format = type === "excel" ? "Excel" : "JSON";
+  return `Exportar ${who} · ${format}`;
+}
 
 export function ExportButtons({
   patientIds,
@@ -67,7 +79,8 @@ export function ExportButtons({
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2">
         {show.map((type) => {
-          const { label, icon: Icon } = LABELS[type];
+          const Icon = ICONS[type];
+          const label = exportLabel(type, patientIds.length);
           const isIndividual = type === "individual";
           const blocked =
             disabled ||

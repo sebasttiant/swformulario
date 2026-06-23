@@ -31,6 +31,16 @@ function readField(patient: Patient, field: string): string {
   return String(raw);
 }
 
+/**
+ * Catalog source field -> the patient free-text field that overrides it when the
+ * "Otro" option is selected. When the operator picked "Otro", the typed value is
+ * exported verbatim instead of the placeholder catalog Athenea value.
+ */
+const OTHER_TEXT_FIELD: Record<string, string> = {
+  cityCatalogValueId: "cityOther",
+  nationalityCatalogValueId: "nationalityOther",
+};
+
 /** Resolve one mapping's source value (catalog -> athenea value, or raw field). */
 function resolveMappingValue(
   patient: Patient,
@@ -40,6 +50,12 @@ function resolveMappingValue(
   const fieldValue = readField(patient, mapping.sourceField);
   if (!fieldValue) return "";
   if (mapping.catalogKey) {
+    // "Otro" free text wins over the catalog placeholder value when present.
+    const otherField = OTHER_TEXT_FIELD[mapping.sourceField];
+    if (otherField) {
+      const otherText = readField(patient, otherField).trim();
+      if (otherText) return otherText;
+    }
     // sourceField holds a CatalogValue id -> translate to its Athenea value.
     return atheneaValueById.get(fieldValue) ?? "";
   }

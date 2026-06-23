@@ -28,6 +28,7 @@ function toPatientData(parsed: PatientParsed) {
     active: parsed.active,
     address: parsed.address ?? null,
     cityCatalogValueId: parsed.cityCatalogValueId,
+    cityOther: parsed.cityOther ?? null,
     fixedPhone: parsed.fixedPhone ?? null,
     mobilePhone: parsed.mobilePhone,
     email: parsed.noEmail ? null : parsed.email?.trim() || null,
@@ -35,6 +36,7 @@ function toPatientData(parsed: PatientParsed) {
     residentialZoneCatalogValueId: parsed.residentialZoneCatalogValueId,
     userTypeCatalogValueId: parsed.userTypeCatalogValueId,
     nationalityCatalogValueId: parsed.nationalityCatalogValueId,
+    nationalityOther: parsed.nationalityOther ?? null,
     insurerCatalogValueId: parsed.insurerCatalogValueId,
     patientOriginCatalogValueId: parsed.patientOriginCatalogValueId,
     treatmentCatalogValueId: parsed.treatmentCatalogValueId ?? null,
@@ -62,10 +64,16 @@ function validate(values: PatientFormValues): PatientActionResult | PatientParse
   return parsed.data;
 }
 
-export async function createPatient(
+/**
+ * Shared persistence path for both the admin and the public capture flows.
+ * Validation (schema + catalog references) is identical regardless of caller —
+ * the only difference is whether an admin session is required, which the callers
+ * enforce BEFORE delegating here. Never call this without an explicit auth
+ * decision at the call site.
+ */
+async function persistNewPatient(
   values: PatientFormValues,
 ): Promise<PatientActionResult> {
-  await requireAdmin();
   const result = validate(values);
   if ("ok" in result) return result;
 
@@ -82,6 +90,27 @@ export async function createPatient(
     console.error("createPatient failed", error);
     return { ok: false, error: "No se pudo guardar el paciente." };
   }
+}
+
+export async function createPatient(
+  values: PatientFormValues,
+): Promise<PatientActionResult> {
+  await requireAdmin();
+  return persistNewPatient(values);
+}
+
+/**
+ * PUBLIC patient intake. Intentionally NOT guarded by requireAdmin: an external
+ * patient can open the public capture link and submit their own record. Safety
+ * comes from full schema + catalog-reference validation (no arbitrary fields are
+ * written) and from the fact that this action only CREATES a record — it never
+ * reads or exposes any other patient's data. It is the only write path reachable
+ * without an admin session.
+ */
+export async function createPublicPatient(
+  values: PatientFormValues,
+): Promise<PatientActionResult> {
+  return persistNewPatient(values);
 }
 
 export async function updatePatient(
