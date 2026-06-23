@@ -18,6 +18,19 @@ function labelFor(list: CatalogOption[], id?: string | null): string {
   return list.find((o) => o.id === id)?.label ?? "—";
 }
 
+/** Show the free-text value when the selected option is "Otro" (by catalog code). */
+function labelOrOther(
+  list: CatalogOption[],
+  id: string | null | undefined,
+  otherCode: string,
+  otherText: string | null | undefined,
+): string {
+  if (id && list.find((o) => o.id === id)?.code === otherCode) {
+    return otherText?.trim() || "Otro";
+  }
+  return labelFor(list, id);
+}
+
 export default async function PatientDetailPage({
   params,
 }: {
@@ -65,9 +78,9 @@ export default async function PatientDetailPage({
       title: "Ubicación",
       rows: [
         ["Dirección", patient.address ?? "—"],
-        ["Ciudad", labelFor(o.city, patient.cityCatalogValueId)],
+        ["Ciudad", labelOrOther(o.city, patient.cityCatalogValueId, "OTRO", patient.cityOther)],
         ["Zona residencial", labelFor(o.residentialZone, patient.residentialZoneCatalogValueId)],
-        ["Nacionalidad", labelFor(o.nationality, patient.nationalityCatalogValueId)],
+        ["Nacionalidad", labelOrOther(o.nationality, patient.nationalityCatalogValueId, "OT", patient.nationalityOther)],
       ],
     },
     {
