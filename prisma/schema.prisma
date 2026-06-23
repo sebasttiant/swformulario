@@ -10,6 +10,27 @@ datasource db {
   provider = "postgresql"
 }
 
+/// Admin operators. Two roles:
+///  - SUPER_ADMIN: system owner; the only role that can manage other admins.
+///  - ADMIN: full operational access (patients, catalogs, exports) but NO user
+///    management. Authorization is enforced server-side, not by hiding UI.
+enum AdminRole {
+  ADMIN
+  SUPER_ADMIN
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String // scrypt: "salt:hash" (hex). Never stored in plaintext.
+  role         AdminRole @default(ADMIN)
+  active       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([role])
+}
+
 model Patient {
   id String @id @default(cuid())
 
@@ -29,6 +50,8 @@ model Patient {
   // Contact + location
   address            String?
   cityCatalogValueId String?
+  // Free-text municipality when "Otro" is selected in the city catalog.
+  cityOther          String?
   fixedPhone         String?
   mobilePhone        String?
   email              String?
@@ -38,6 +61,8 @@ model Patient {
   residentialZoneCatalogValueId        String?
   userTypeCatalogValueId               String?
   nationalityCatalogValueId            String?
+  // Free-text nationality when "Otro" is selected in the nationality catalog.
+  nationalityOther                     String?
   insurerCatalogValueId                String?
   patientOriginCatalogValueId          String?
   treatmentCatalogValueId              String?
