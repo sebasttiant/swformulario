@@ -14,7 +14,6 @@ export type SexExportKey = "SEXO" | "IDSEXO";
 
 export interface AppConfig {
   databaseUrl: string;
-  adminPassword: string;
   sessionSecret: string;
   /** Optional API key for machine access to the /api/athenea REST endpoints. */
   exportApiKey: string;
@@ -34,7 +33,7 @@ function readSexExportKey(): SexExportKey {
  * security hazard, so a missing value fails fast instead of silently weakening
  * auth. Dev/test keep the convenient default.
  */
-function readSecret(name: "ADMIN_PASSWORD" | "SESSION_SECRET", devFallback: string): string {
+function readSecret(name: "SESSION_SECRET", devFallback: string): string {
   const value = process.env[name]?.trim();
   if (value) return value;
   if (process.env.NODE_ENV === "production") {
@@ -48,7 +47,6 @@ function readSecret(name: "ADMIN_PASSWORD" | "SESSION_SECRET", devFallback: stri
 export function getConfig(): AppConfig {
   return {
     databaseUrl: process.env.DATABASE_URL ?? "",
-    adminPassword: readSecret("ADMIN_PASSWORD", "abad-admin"),
     sessionSecret: readSecret("SESSION_SECRET", "dev-session-secret-change-me"),
     exportApiKey: process.env.EXPORT_API_KEY?.trim() ?? "",
     sexExportKey: readSexExportKey(),
